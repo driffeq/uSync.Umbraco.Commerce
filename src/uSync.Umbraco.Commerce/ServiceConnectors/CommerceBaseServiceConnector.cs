@@ -23,12 +23,12 @@ namespace uSync.Umbraco.Commerce.ServiceConnectors
             throw new NotImplementedException();
         }
 
-        public IArtifact GetArtifact(Udi udi)
+        public IArtifact GetArtifact(Udi udi, IContextCache contextCache)
         {
             throw new NotImplementedException();
         }
 
-        public IArtifact GetArtifact(object entity)
+        public IArtifact GetArtifact(object entity, IContextCache contextCache)
         {
             throw new NotImplementedException();
         }
