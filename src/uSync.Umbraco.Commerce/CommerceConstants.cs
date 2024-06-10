@@ -20,6 +20,8 @@
 
             public const string PaymentMethod = "PaymentMethod";
             public const string ShippingMethod = "ShippingMethod";
+
+            public const string Location = "Location";
         }
 
         internal static class Priorites
@@ -52,6 +54,8 @@
             public const int Currency = COMMERCE_RESERVED_LOWER + 12;  // requires countries
 
             public const int TaxClass = COMMERCE_RESERVED_LOWER + 13; // requires countries
+            
+            public const int Location = COMMERCE_RESERVED_LOWER + 14; // requires store, country, region, payment and shipping **
 
             public const int PaymentMethod = COMMERCE_RESERVED_LOWER + 21; // requires store, countries, currencies
             public const int ShippingMethod = COMMERCE_RESERVED_LOWER + 22;// requires store, countries, currencies
@@ -86,6 +90,8 @@
             public const string GiftCard = "commerce-gift-card";
 
             public const string ProductAttribute = "commerce-product-attribute";
+
+            public const string Location = "commerce-location";
         }
     }
 }
