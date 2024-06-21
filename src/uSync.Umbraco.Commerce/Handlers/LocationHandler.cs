@@ -11,6 +11,7 @@ using Umbraco.Commerce.Common.Events;
 using Umbraco.Commerce.Core.Api;
 using Umbraco.Commerce.Core.Events.Notification;
 using Umbraco.Commerce.Core.Models;
+using Umbraco.Extensions;
 
 using uSync.BackOffice.Configuration;
 using uSync.BackOffice.Services;
@@ -42,6 +43,17 @@ public class CommerceLocationHandler : CommerceSyncHandlerBase<LocationReadOnly>
 
     protected override IEnumerable<LocationReadOnly> GetByStore(Guid storeId)
         => _CommerceApi.GetLocations(storeId);
+
+    protected override string GetItemPath(LocationReadOnly item, bool useGuid, bool isFlat)
+    {
+        if (useGuid) return GetItemKey(item).ToString();
+
+        var store = _CommerceApi.GetStore(item.StoreId);
+        if (store is null) return GetItemName(item);
+
+        return $"{store.Alias.ToSafeFileName(shortStringHelper)}_{GetItemName(item)}";
+    }
+
 
     protected override string GetItemName(LocationReadOnly item)
         => item.Name;
