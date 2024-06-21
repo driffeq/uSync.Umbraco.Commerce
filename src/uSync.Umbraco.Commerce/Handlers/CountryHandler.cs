@@ -24,6 +24,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         Icon = "icon-globe", IsTwoPass = true, EntityType = CommerceConstants.UdiEntityType.Country)]
     public class CountryHandler : CommerceSyncHandlerBase<CountryReadOnly>, ISyncPostImportHandler, ISyncHandler
     {
+        protected override Guid GetStoreId(CountryReadOnly item)
+            => item.StoreId;
+
         public CountryHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<CountryReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 

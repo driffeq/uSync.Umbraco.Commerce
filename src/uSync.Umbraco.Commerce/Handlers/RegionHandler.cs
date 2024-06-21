@@ -25,6 +25,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         public RegionHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<RegionReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 
+        protected override Guid GetStoreId(RegionReadOnly item)
+            => item.StoreId;
+
         protected override void DeleteViaService(RegionReadOnly item)
             => _CommerceApi.DeleteRegion(item.Id);
 

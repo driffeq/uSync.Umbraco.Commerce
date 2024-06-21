@@ -20,6 +20,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         public ExportTemplateHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<ExportTemplateReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 
+        protected override Guid GetStoreId(ExportTemplateReadOnly item)
+            => item.StoreId;
+
         protected override void DeleteViaService(ExportTemplateReadOnly item)
             => _CommerceApi.DeleteExportTemplate(item.Id);
 

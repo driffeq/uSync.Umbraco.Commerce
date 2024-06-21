@@ -20,6 +20,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         public EmailTemplateHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<EmailTemplateReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 
+        protected override Guid GetStoreId(EmailTemplateReadOnly item)
+            => item.StoreId;
+
         protected override void DeleteViaService(EmailTemplateReadOnly item)
             => _CommerceApi.DeleteEmailTemplate(item.Id);
 

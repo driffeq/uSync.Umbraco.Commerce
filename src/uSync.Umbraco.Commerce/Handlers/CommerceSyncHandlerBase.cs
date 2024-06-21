@@ -9,6 +9,8 @@ using Umbraco.Cms.Core.Strings;
 using Umbraco.Commerce.Common.Events;
 using Umbraco.Commerce.Core.Api;
 using Umbraco.Commerce.Core.Models;
+using Umbraco.Extensions;
+
 using uSync.BackOffice;
 using uSync.BackOffice.Configuration;
 using uSync.BackOffice.Services;
@@ -37,6 +39,26 @@ namespace uSync.Umbraco.Commerce.Handlers
             : base(logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         {
             _CommerceApi = CommerceApi;
+        }
+
+        protected virtual Guid GetStoreId(TObject item)
+            => Guid.Empty;
+
+        protected string GetStoreName(TObject item)
+        {
+            var storeId = GetStoreId(item);
+            if (storeId == Guid.Empty) return string.Empty;
+
+            return _CommerceApi.GetStore(storeId)?.Name ?? string.Empty;
+        }
+
+        protected override string GetItemFileName(TObject item)
+        {
+            var storeName = GetStoreName(item);
+            if (string.IsNullOrWhiteSpace(storeName))
+                return base.GetItemFileName(item);
+
+            return $"{GetStoreName(item).ToSafeFileName(shortStringHelper)}_{base.GetItemFileName(item)}";
         }
 
         /// <summary>

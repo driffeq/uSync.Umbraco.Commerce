@@ -20,6 +20,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         public OrderStatusHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<OrderStatusReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 
+        protected override Guid GetStoreId(OrderStatusReadOnly item)
+            => item.StoreId;
+
         protected override void DeleteViaService(OrderStatusReadOnly item)
             => _CommerceApi.DeleteOrderStatus(item.Id);
 

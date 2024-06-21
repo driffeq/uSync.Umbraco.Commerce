@@ -20,9 +20,11 @@ namespace uSync.Umbraco.Commerce.Handlers
         , IEventHandlerFor<PrintTemplateSavedNotification>
         , IEventHandlerFor<PrintTemplateDeletedNotification>
     {
-
         public PrintTemplateHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<PrintTemplateReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
+
+        protected override Guid GetStoreId(PrintTemplateReadOnly item)
+            => item.StoreId;
 
         protected override void DeleteViaService(PrintTemplateReadOnly item)
             => _CommerceApi.DeletePrintTemplate(item.Id);

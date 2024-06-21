@@ -21,9 +21,11 @@ namespace uSync.Umbraco.Commerce.Handlers
         , IEventHandlerFor<TaxClassSavedNotification>
         , IEventHandlerFor<TaxClassDeletedNotification>
     {
-
         public TaxClassHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<TaxClassReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory)
             : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory) { }
+
+        protected override Guid GetStoreId(TaxClassReadOnly item)
+            => item.StoreId;
 
         protected override TaxClassReadOnly GetFromService(Guid key)
             => _CommerceApi.GetTaxClass(key);

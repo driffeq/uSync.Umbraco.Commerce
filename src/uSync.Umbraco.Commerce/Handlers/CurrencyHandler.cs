@@ -20,6 +20,9 @@ namespace uSync.Umbraco.Commerce.Handlers
         public CurrencyHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<CurrencyReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
 
+        protected override Guid GetStoreId(CurrencyReadOnly item)
+            => item.StoreId;
+
         protected override void DeleteViaService(CurrencyReadOnly item)
             => _CommerceApi.DeleteCurrency(item.Id);
 

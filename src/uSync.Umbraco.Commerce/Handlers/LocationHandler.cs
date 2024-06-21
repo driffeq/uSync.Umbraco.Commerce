@@ -37,6 +37,9 @@ public class CommerceLocationHandler : CommerceSyncHandlerBase<LocationReadOnly>
         : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
     {  }
 
+    protected override Guid GetStoreId(LocationReadOnly item)
+        => item.StoreId;
+
     protected override IEnumerable<LocationReadOnly> GetByStore(Guid storeId)
         => _CommerceApi.GetLocations(storeId);
 

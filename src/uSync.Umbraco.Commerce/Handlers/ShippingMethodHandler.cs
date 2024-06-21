@@ -21,6 +21,8 @@ namespace uSync.Umbraco.Commerce.Handlers
         , IEventHandlerFor<ShippingMethodSavedNotification>
         , IEventHandlerFor<ShippingMethodDeletedNotification>
     {
+        protected override Guid GetStoreId(ShippingMethodReadOnly item)
+            => item.StoreId;
 
         public ShippingMethodHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<ShippingMethodReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory)
             : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)

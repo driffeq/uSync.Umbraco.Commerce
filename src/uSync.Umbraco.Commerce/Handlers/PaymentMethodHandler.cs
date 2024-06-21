@@ -20,9 +20,11 @@ namespace uSync.Umbraco.Commerce.Handlers
         , IEventHandlerFor<PaymentMethodSavedNotification>
         , IEventHandlerFor<PaymentMethodDeletedNotification>
     {
-
         public PaymentMethodHandler(ICommerceApi CommerceApi, ILogger<CommerceSyncHandlerBase<PaymentMethodReadOnly>> logger, AppCaches appCaches, IShortStringHelper shortStringHelper, SyncFileService syncFileService, uSyncEventService mutexService, uSyncConfigService uSyncConfig, ISyncItemFactory itemFactory) : base(CommerceApi, logger, appCaches, shortStringHelper, syncFileService, mutexService, uSyncConfig, itemFactory)
         { }
+
+        protected override Guid GetStoreId(PaymentMethodReadOnly item)
+            => item.StoreId;
 
         protected override IEnumerable<PaymentMethodReadOnly> GetByStore(Guid storeId)
             => _CommerceApi.GetPaymentMethods(storeId);
