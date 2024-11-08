@@ -21,12 +21,20 @@ namespace uSync.Umbraco.Commerce.Serializers
             ILogger<CountrySerializer> logger) : base(CommerceApi, settingsAccessor, uowProvider, logger)
         { }
 
-        /// <summary>
-        ///  Confirm that the xml contains the minimum set of things we need to perform the sync.
-        /// </summary>
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
+        protected override SyncAttempt<XElement> SerializeCore(CountryReadOnly item, SyncSerializerOptions options)
+        {
+            var node = InitializeBaseNode(item, ItemAlias(item));
+
+            node.Add(new XElement(nameof(item.Name), item.Name));
+            node.Add(new XElement(nameof(item.Code), item.Code));
+            node.Add(new XElement(nameof(item.DefaultCurrencyId), item.DefaultCurrencyId));
+            node.Add(new XElement(nameof(item.DefaultPaymentMethodId), item.DefaultPaymentMethodId));
+            node.Add(new XElement(nameof(item.DefaultShippingMethodId), item.DefaultShippingMethodId));
+            node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
+            node.AddStoreId(item.StoreId);
+
+            return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
+        }
 
         protected override SyncAttempt<CountryReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -34,7 +42,7 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             var alias = node.GetAlias();
             var id = node.GetKey();
-            var name = node.Element("Name").ValueOrDefault(alias);
+            var name = node.Element(nameof(readOnlyCountry.Name)).ValueOrDefault(alias);
             var storeId = node.GetStoreId();
             var code = node.Element(nameof(readOnlyCountry.Code)).ValueOrDefault(string.Empty);
 
@@ -82,21 +90,12 @@ namespace uSync.Umbraco.Commerce.Serializers
             }
         }
 
-
-        protected override SyncAttempt<XElement> SerializeCore(CountryReadOnly item, SyncSerializerOptions options)
-        {
-            var node = InitializeBaseNode(item, ItemAlias(item));
-
-            node.Add(new XElement("Name", item.Name));
-            node.Add(new XElement(nameof(item.Code), item.Code));
-            node.Add(new XElement(nameof(item.DefaultCurrencyId), item.DefaultCurrencyId));
-            node.Add(new XElement(nameof(item.DefaultPaymentMethodId), item.DefaultPaymentMethodId));
-            node.Add(new XElement(nameof(item.DefaultShippingMethodId), item.DefaultShippingMethodId));
-            node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-            node.AddStoreId(item.StoreId);
-
-            return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
-        }
+        /// <summary>
+        ///  Confirm that the xml contains the minimum set of things we need to perform the sync.
+        /// </summary>
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
 
         // overloads to let base functions do the bulk of the work.
 

@@ -34,7 +34,6 @@ public class CommerceLocationSerializer :
         node.Add(new XElement(nameof(item.Name), item.Name));
         node.Add(new XElement(nameof(item.Type), item.Type));
         node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-
         node.Add(new XElement(nameof(item.AddressLine1), item.AddressLine1));
         node.Add(new XElement(nameof(item.AddressLine2), item.AddressLine2));
         node.Add(new XElement(nameof(item.City), item.City));
@@ -50,7 +49,7 @@ public class CommerceLocationSerializer :
         var readonlyItem = FindItem(node);
 
         var alias = node.GetAlias();
-        var key = node.GetKey();
+        var id = node.GetKey();
         var name = node.Element(nameof(readonlyItem.Name)).ValueOrDefault(alias);
         var storeId = node.GetStoreId();
 
@@ -59,7 +58,7 @@ public class CommerceLocationSerializer :
             Location location;
             if (readonlyItem is null)
             {
-                location = Location.Create(uow, storeId, alias, name);
+                location = Location.Create(uow, id, storeId, alias, name);
             }
             else
             {
@@ -87,12 +86,15 @@ public class CommerceLocationSerializer :
             uow.Complete();
 
             return SyncAttemptSucceed(name, location.AsReadOnly(), ChangeType.Import);
-
         }
-
-
     }
 
+    /// <summary>
+    ///  Confirm that the xml contains the minimum set of things we need to perform the sync.
+    /// </summary>
+    public override bool IsValid(XElement node)
+        => base.IsValid(node)
+        && node.GetStoreId() != Guid.Empty;
 
     public override string GetItemAlias(LocationReadOnly item)
         => item.Alias;

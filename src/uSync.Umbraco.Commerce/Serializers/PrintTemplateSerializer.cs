@@ -26,17 +26,12 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-            node.AddStoreId(item.StoreId);
-
             node.Add(new XElement(nameof(item.Category), item.Category));
             node.Add(new XElement(nameof(item.TemplateView), item.TemplateView));
+            node.AddStoreId(item.StoreId);
 
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
 
         protected override SyncAttempt<PrintTemplateReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -72,7 +67,9 @@ namespace uSync.Umbraco.Commerce.Serializers
             }
         }
 
-        // 
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
 
         public override string GetItemAlias(PrintTemplateReadOnly item)
             => item.Alias;

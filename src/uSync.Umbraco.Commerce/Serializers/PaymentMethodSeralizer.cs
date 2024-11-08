@@ -20,11 +20,7 @@ namespace uSync.Umbraco.Commerce.Serializers
     {
         public PaymentMethodSeralizer(ICommerceApi CommerceApi, CommerceSyncSettingsAccessor settingsAccessor,
             IUnitOfWorkProvider uowProvider,
-#if NETFRAMEWORK
-            ILogger logger) : base(CommerceApi, settingsAccessor, uowProvider, logger)
-#else
             ILogger<PaymentMethodSeralizer> logger) : base(CommerceApi, settingsAccessor, uowProvider, logger)
-#endif
         { }
 
         protected override SyncAttempt<XElement> SerializeCore(PaymentMethodReadOnly item, SyncSerializerOptions options)
@@ -33,47 +29,21 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-            node.AddStoreId(item.StoreId);
-
             node.Add(SerializeCountryRegions(item.AllowedCountryRegions));
-
             node.Add(new XElement(nameof(item.CanCancelPayments), item.CanCancelPayments));
             node.Add(new XElement(nameof(item.CanCapturePayments), item.CanCapturePayments));
             node.Add(new XElement(nameof(item.CanFetchPaymentStatuses), item.CanFetchPaymentStatuses));
             node.Add(new XElement(nameof(item.CanRefundPayments), item.CanRefundPayments));
-
             node.Add(SerializeProviderSettings(item.PaymentProviderSettings));
             node.Add(SerializePrices(item.Prices));
-
             node.Add(new XElement(nameof(item.ImageId), item.ImageId));
             node.Add(new XElement(nameof(item.PaymentProviderAlias), item.PaymentProviderAlias));
-
             node.Add(new XElement(nameof(item.Sku), item.Sku));
             node.Add(new XElement(nameof(item.TaxClassId), item.TaxClassId));
+            node.AddStoreId(item.StoreId);
 
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
-
-        private XElement SerializeProviderSettings(IReadOnlyDictionary<string, string> values)
-        {
-            var root = new XElement("ProviderSettings");
-
-            if (values != null && values.Any())
-            {
-                foreach (var setting in values.Where(x => !StringExtensions.InvariantContains(_settingsAccessor.Settings.PaymentMethods.IgnoreSettings, x.Key)))
-                {
-                    root.Add(new XElement("Setting",
-                        new XElement("Key", setting.Key),
-                        new XElement("Value", setting.Value)));
-                }
-            }
-
-            return root;
-        }
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
 
         protected override SyncAttempt<PaymentMethodReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -126,6 +96,27 @@ namespace uSync.Umbraco.Commerce.Serializers
                 return SyncAttemptSucceed(name, item.AsReadOnly(), ChangeType.Import);
             }
         }
+
+        private XElement SerializeProviderSettings(IReadOnlyDictionary<string, string> values)
+        {
+            var root = new XElement("ProviderSettings");
+
+            if (values != null && values.Any())
+            {
+                foreach (var setting in values.Where(x => !StringExtensions.InvariantContains(_settingsAccessor.Settings.PaymentMethods.IgnoreSettings, x.Key)))
+                {
+                    root.Add(new XElement("Setting",
+                        new XElement("Key", setting.Key),
+                        new XElement("Value", setting.Value)));
+                }
+            }
+
+            return root;
+        }
+
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
 
         private void DeserializeProviderSettings(XElement node, PaymentMethod item)
         {

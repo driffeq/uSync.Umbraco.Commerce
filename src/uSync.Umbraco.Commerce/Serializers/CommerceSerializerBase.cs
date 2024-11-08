@@ -73,7 +73,7 @@ namespace uSync.Umbraco.Commerce.Serializers
 
         public abstract void DoSaveItem(TObject item);
 
-        protected XElement SerailizeList<TResult>(string collectionName, string elementName, IEnumerable<TResult> items)
+        protected XElement SerializeList<TResult>(string collectionName, string elementName, IEnumerable<TResult> items)
         {
             var root = new XElement(collectionName);
 

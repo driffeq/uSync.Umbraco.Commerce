@@ -1,6 +1,4 @@
-﻿using Lucene.Net.Codecs.Compressing;
-
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
@@ -36,11 +34,11 @@ namespace uSync.Umbraco.Commerce.Serializers
             // makes the basic xml,
             var node = InitializeBaseNode(item, item.Alias);
 
-            node.Add(new XElement("Name", item.Name));
+            node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
 
             node.Add(new XElement(nameof(item.PricesIncludeTax), item.PricesIncludeTax));
-            node.Add(new XElement(nameof(item.CookieTimeout), item.CookieTimeout));
+            node.Add(new XElement(nameof(item.CookieTimeout), (int?)item.CookieTimeout?.TotalMinutes));
             node.Add(new XElement(nameof(item.CartNumberTemplate), item.CartNumberTemplate));
 
             // product
@@ -59,6 +57,7 @@ namespace uSync.Umbraco.Commerce.Serializers
             node.Add(new XElement(nameof(item.OrderNumberTemplate), item.OrderNumberTemplate));
 
             node.Add(AddNullableGuid(nameof(item.BaseCurrencyId), item.BaseCurrencyId));
+            node.Add(AddNullableGuid(nameof(item.DefaultLocationId), item.DefaultLocationId));
             node.Add(AddNullableGuid(nameof(item.DefaultCountryId), item.DefaultCountryId));
             node.Add(AddNullableGuid(nameof(item.DefaultTaxClassId), item.DefaultTaxClassId));
             node.Add(AddNullableGuid(nameof(item.DefaultOrderStatusId), item.DefaultOrderStatusId));
@@ -84,54 +83,13 @@ namespace uSync.Umbraco.Commerce.Serializers
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
 
-        private void SerializeAllowedUsers(XElement node, StoreReadOnly item)
-        {
-            var allowedUsers = new XElement(nameof(item.AllowedUsers));
-
-            if (item.AllowedUsers.Count > 0)
-            {
-                foreach (var id in item.AllowedUsers)
-                {
-                    var user = _userService.GetByProviderKey(id.UserId);
-                    if (user != null)
-                    {
-                        allowedUsers.Add(new XElement("User", user.Username));
-                    }
-                }
-            }
-
-            node.Add(allowedUsers);
-        }
-
-        private void SerializeUserRoles(XElement node, StoreReadOnly item)
-        {
-            var allowedRoles = new XElement(nameof(item.AllowedUserRoles));
-            if (item.AllowedUserRoles.Count > 0)
-            {
-                foreach (var role in item.AllowedUserRoles)
-                {
-                    var group = _userService.GetUserGroupByAlias(role.Role);
-                    if (group != null)
-                    {
-                        allowedRoles.Add(new XElement("Role", group.Alias));
-                    }
-                }
-            }
-
-            node.Add(allowedRoles);
-        }
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && !string.IsNullOrWhiteSpace(node.Element("Name").ValueOrDefault(string.Empty));
-
         protected override SyncAttempt<StoreReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
             var readOnlyStore = FindItem(node);
 
             var alias = node.GetAlias();
             var id = node.GetKey();
-            var name = node.Element("Name").ValueOrDefault(alias);
+            var name = node.Element(nameof(readOnlyStore.Name)).ValueOrDefault(alias);
 
             using (var uow = _uowProvider.Create())
             {
@@ -153,35 +111,37 @@ namespace uSync.Umbraco.Commerce.Serializers
 
                 store.SetPriceTaxInclusivity(node.Element(nameof(store.PricesIncludeTax)).ValueOrDefault(false));
 
+                var cookiesEnabled = node.Element(nameof(store.CookieTimeout)).ValueOrDefault((int?)store.CookieTimeout?.TotalMinutes);
+                if (cookiesEnabled.HasValue)
+                {
+                    store.EnableCookies(TimeSpan.FromMinutes(cookiesEnabled.Value));
+                }
+                else
+                {
+                    store.DisableCookies();
+                }
+
                 store.SetCartNumberTemplate(node.Element(nameof(store.CartNumberTemplate)).ValueOrDefault(string.Empty));
 
-                store.SetProductPropertyAliases(node.Element(nameof(store.ProductPropertyAliases)).ValueOrDefault(string.Empty)
-                    .ToDelimitedList());
-
-                store.SetProductUniquenessPropertyAliases(node.Element(nameof(store.ProductUniquenessPropertyAliases)).ValueOrDefault(string.Empty).ToDelimitedList());
+                store.SetProductPropertyAliases(node.Element(nameof(store.ProductPropertyAliases)).ValueOrDefault(string.Empty).ToDelimitedList(), SetBehavior.Replace);
+                store.SetProductUniquenessPropertyAliases(node.Element(nameof(store.ProductUniquenessPropertyAliases)).ValueOrDefault(string.Empty).ToDelimitedList(), SetBehavior.Replace);
 
                 store.SetGiftCardCodeLength(node.Element(nameof(store.GiftCardCodeLength)).ValueOrDefault(store.GiftCardCodeLength));
                 store.SetGiftCardValidityTimeframe(node.Element(nameof(store.GiftCardDaysValid)).ValueOrDefault(store.GiftCardDaysValid));
                 store.SetGiftCardCodeTemplate(node.Element(nameof(store.GiftCardCodeTemplate)).ValueOrDefault(store.GiftCardCodeTemplate));
 
                 store.SetGiftCardActivationMethod(node.Element(nameof(store.GiftCardActivationMethod)).ValueOrDefault(store.GiftCardActivationMethod));
-
-                var giftCardPropertyAliasList = node.Element(nameof(store.GiftCardPropertyAliases))
-                    .ValueOrDefault(string.Empty).ToDelimitedList();
-                if (giftCardPropertyAliasList != null && giftCardPropertyAliasList.Count > 0)
-                {
-                    store.SetGiftCardPropertyAliases(giftCardPropertyAliasList);
-                }
-                else
-                {
-                    store.ClearGiftCardPropertyAliases();
-                }
+                store.SetGiftCardPropertyAliases(node.Element(nameof(store.GiftCardPropertyAliases)).ValueOrDefault(string.Empty).ToDelimitedList(), SetBehavior.Replace);
 
                 // TODO: Where is OrderEditorConfig? store.SetOrderEditorConfig(node.Element(nameof(store.OrderEditorConfig)).ValueOrDefault(store.OrderEditorConfig));
 
                 // base currency
                 Guid? currencyId = GetCurrencyId(node, nameof(store.BaseCurrencyId));
                 store.SetBaseCurrency(currencyId);
+
+                // default location
+                Guid? locationId = GetLocationId(node, nameof(store.DefaultLocationId));
+                store.SetDefaultLocation(locationId);
 
                 // country 
                 Guid? countryId = GetCountryId(node, nameof(store.DefaultCountryId));
@@ -227,6 +187,47 @@ namespace uSync.Umbraco.Commerce.Serializers
                 return SyncAttemptSucceed(name, store.AsReadOnly(), ChangeType.Import, true);
             }
         }
+
+        private void SerializeAllowedUsers(XElement node, StoreReadOnly item)
+        {
+            var allowedUsers = new XElement(nameof(item.AllowedUsers));
+
+            if (item.AllowedUsers.Count > 0)
+            {
+                foreach (var id in item.AllowedUsers)
+                {
+                    var user = _userService.GetByProviderKey(id.UserId);
+                    if (user != null)
+                    {
+                        allowedUsers.Add(new XElement("User", user.Username));
+                    }
+                }
+            }
+
+            node.Add(allowedUsers);
+        }
+
+        private void SerializeUserRoles(XElement node, StoreReadOnly item)
+        {
+            var allowedRoles = new XElement(nameof(item.AllowedUserRoles));
+            if (item.AllowedUserRoles.Count > 0)
+            {
+                foreach (var role in item.AllowedUserRoles)
+                {
+                    var group = _userService.GetUserGroupByAlias(role.Role);
+                    if (group != null)
+                    {
+                        allowedRoles.Add(new XElement("Role", group.Alias));
+                    }
+                }
+            }
+
+            node.Add(allowedRoles);
+        }
+
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && !string.IsNullOrWhiteSpace(node.Element("Name").ValueOrDefault(string.Empty));
 
         private void DeserializeAllowedRoles(XElement node, Store store)
         {
@@ -336,6 +337,12 @@ namespace uSync.Umbraco.Commerce.Serializers
         /// </summary>
         private Guid? GetCurrencyId(XElement node, string name)
             => GetCommerceIdFromXml(node, name, _CommerceApi.GetCurrency);
+
+        /// <summary>
+        ///  Get the LocationId from the xml and confirm it exist in Commerce.
+        /// </summary>
+        private Guid? GetLocationId(XElement node, string name)
+            => GetCommerceIdFromXml(node, name, _CommerceApi.GetLocation);
 
         /// <summary>
         ///  Get the CountryId from the xml and confirm it exist in Commerce.

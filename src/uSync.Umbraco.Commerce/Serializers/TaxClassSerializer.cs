@@ -30,34 +30,12 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-            node.AddStoreId(item.StoreId);
-
             node.Add(new XElement(nameof(item.DefaultTaxRate), item.DefaultTaxRate.Value));
-
             node.Add(SerializeTaxRates(item));
+            node.AddStoreId(item.StoreId);
 
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
-
-        private XElement SerializeTaxRates(TaxClassReadOnly item)
-        {
-            var root = new XElement("TaxRates");
-
-            foreach (var rate in item.CountryRegionTaxRates)
-            {
-                root.Add(new XElement("Rate",
-                    new XElement("CountryId", rate.CountryId),
-                    new XElement("RegionId", rate.RegionId),
-                    new XElement("TaxRate", rate.TaxRate)));
-            }
-
-            return root;
-        }
-
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
 
         protected override SyncAttempt<TaxClassReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -96,6 +74,25 @@ namespace uSync.Umbraco.Commerce.Serializers
             }
         }
 
+        private XElement SerializeTaxRates(TaxClassReadOnly item)
+        {
+            var root = new XElement("TaxRates");
+
+            foreach (var rate in item.CountryRegionTaxRates)
+            {
+                root.Add(new XElement("Rate",
+                    new XElement("CountryId", rate.CountryId),
+                    new XElement("RegionId", rate.RegionId),
+                    new XElement("TaxRate", rate.TaxRate)));
+            }
+
+            return root;
+        }
+
+
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
         protected List<SyncTaxRateModel> GetTaxRates(XElement node)
         {
             var taxRates = new List<SyncTaxRateModel>();

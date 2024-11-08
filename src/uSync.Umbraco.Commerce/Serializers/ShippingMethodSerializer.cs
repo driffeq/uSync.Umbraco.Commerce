@@ -26,25 +26,18 @@ namespace uSync.Umbraco.Commerce.Serializers
         {
             var node = InitializeBaseNode(item, ItemAlias(item));
 
-
             node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-
-            node.AddStoreId(item.StoreId);
-
             node.Add(SerializeCountryRegions(item.AllowedCountryRegions));
-            node.Add(SerializePrices(item.Prices));
-
+            var calculationConfig = item.GetCalculationConfig<FixedRateShippingCalculationConfig>();
+            node.Add(SerializePrices(calculationConfig.Prices));
             node.Add(new XElement(nameof(item.ImageId), item.ImageId));
             node.Add(new XElement(nameof(item.Sku), item.Sku));
             node.Add(new XElement(nameof(item.TaxClassId), item.TaxClassId));
+            node.AddStoreId(item.StoreId);
 
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
 
         protected override SyncAttempt<ShippingMethodReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -60,7 +53,7 @@ namespace uSync.Umbraco.Commerce.Serializers
                 ShippingMethod item;
                 if (readonlyItem == null)
                 {
-                    item = ShippingMethod.Create(uow, id, storeId, alias, name);
+                    item = ShippingMethod.Create(uow, id, storeId, alias, name, "basic", ShippingCalculationMode.Fixed);
                 }
                 else
                 {
@@ -86,6 +79,10 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             }
         }
+
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
 
         private void DeserializeCountryRegions(XElement node, ShippingMethod item)
         {
@@ -126,49 +123,9 @@ namespace uSync.Umbraco.Commerce.Serializers
 
         private void DeserializePrices(XElement node, ShippingMethod item)
         {
-            var prices = GetServicePrices(node);
-
-            var pricesToRemove = item.Prices
-                .Where(x => item.Prices == null
-                || !prices.Any(y => y.CountryId == x.CountryId
-                    && y.RegionId == x.RegionId
-                    && y.CurrencyId == y.CurrencyId))
-                .ToList();
-
-            foreach (var price in prices)
-            {
-                if (price.CountryId == null && price.RegionId == null)
-                {
-                    item.SetDefaultPriceForCurrency(price.CurrencyId.Value, price.Value);
-                }
-                else
-                {
-                    if (price.RegionId != null)
-                    {
-                        item.SetRegionPriceForCurrency(price.CountryId.Value, price.RegionId.Value, price.CurrencyId.Value, price.Value);
-                    }
-                    else
-                    {
-                        item.SetCountryPriceForCurrency(price.CountryId.Value, price.CurrencyId.Value, price.Value);
-                    }
-                }
-            }
-
-            foreach (var price in pricesToRemove)
-            {
-                if (price.CountryId == null && price.RegionId == null)
-                {
-                    item.ClearDefaultPriceForCurrency(price.CurrencyId);
-                }
-                else if (price.CountryId != null && price.RegionId == null)
-                {
-                    item.ClearCountryPriceForCurrency(price.CountryId.Value, price.CurrencyId);
-                }
-                else
-                {
-                    item.ClearRegionPriceForCurrency(price.CountryId.Value, price.RegionId.Value, price.CurrencyId);
-                }
-            }
+            var prices = GetServicePrices(node).Select(x => new ServicePrice(x.Value, x.CurrencyId.Value));
+            var calculationConfig = new FixedRateShippingCalculationConfig(prices);
+            item.SetCalculationConfig(calculationConfig);
         }
 
         public override string GetItemAlias(ShippingMethodReadOnly item)

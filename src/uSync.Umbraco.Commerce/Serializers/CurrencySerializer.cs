@@ -31,22 +31,16 @@ namespace uSync.Umbraco.Commerce.Serializers
         {
             var node = InitializeBaseNode(item, ItemAlias(item));
 
-            node.Add(new XElement("Name", item.Name));
+            node.Add(new XElement(nameof(item.Name), item.Name));
             node.Add(new XElement(nameof(item.SortOrder), item.SortOrder));
-            node.AddStoreId(item.StoreId);
-
             node.Add(new XElement(nameof(item.Code), item.Code));
             node.Add(new XElement(nameof(item.CultureName), item.CultureName));
             node.Add(new XElement(nameof(item.AllowedCountries), string.Join(",", item.AllowedCountries.Select(x => x.CountryId))));
             node.Add(new XElement(nameof(item.FormatTemplate), item.FormatTemplate));
+            node.AddStoreId(item.StoreId);
 
             return SyncAttemptSucceedIf(node != null, item.Name, node, ChangeType.Export);
         }
-
-
-        public override bool IsValid(XElement node)
-            => base.IsValid(node)
-            && node.GetStoreId() != Guid.Empty;
 
         protected override SyncAttempt<CurrencyReadOnly> DeserializeCore(XElement node, SyncSerializerOptions options)
         {
@@ -54,7 +48,7 @@ namespace uSync.Umbraco.Commerce.Serializers
 
             var alias = node.GetAlias();
             var id = node.GetKey();
-            var name = node.Element("Name").ValueOrDefault(alias);
+            var name = node.Element(nameof(readOnlyCurrency.Name)).ValueOrDefault(alias);
             var storeId = node.GetStoreId();
             var code = node.Element(nameof(readOnlyCurrency.Code)).ValueOrDefault(string.Empty);
             var culture = node.Element(nameof(readOnlyCurrency.CultureName)).ValueOrDefault(string.Empty);
@@ -90,6 +84,10 @@ namespace uSync.Umbraco.Commerce.Serializers
                 return SyncAttemptSucceed(name, currency.AsReadOnly(), ChangeType.Import, true);
             }
         }
+
+        public override bool IsValid(XElement node)
+            => base.IsValid(node)
+            && node.GetStoreId() != Guid.Empty;
 
         private void DeserializeCountries(XElement node, Currency currency)
         {
